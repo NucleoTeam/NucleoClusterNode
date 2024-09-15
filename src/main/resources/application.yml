@@ -1,0 +1,17 @@
+
+spring:
+  kafka:
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        "[spring.json.type.mapping]": status:com.nucleodb.cluster.raft.common.Status,leaderRequest:com.nucleodb.cluster.raft.leadership.LeaderRequest,leader:com.nucleodb.cluster.raft.leadership.LeaderCommand
+    consumer:
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      group-id: ${random.uuid}
+      auto-offset-reset: latest
+    bootstrap-servers: 127.0.0.1:29094
+server:
+  port: ${random.int[9000,9400]}
+logging:
+  level:
+    root: info
