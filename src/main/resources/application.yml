@@ -11,7 +11,7 @@ spring:
       auto-offset-reset: latest
     bootstrap-servers: 127.0.0.1:29094
 server:
-  port: ${random.int[9000,9400]}
+  port: 9001
 logging:
   level:
     root: info

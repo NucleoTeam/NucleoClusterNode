@@ -2,38 +2,55 @@ package com.nucleodb.cluster.raft.common;
 
 import com.google.common.collect.Sets;
 import com.nucleodb.library.NucleoDB;
+import com.nucleodb.library.database.tables.connection.ConnectionHandler;
+import com.nucleodb.library.database.tables.table.DataTable;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class Status {
     public Status() {
     }
 
-    public Status(int port) {
+    public Status(NucleoDB nucleoDB, int port) {
         this.port = port;
+        this.nucleoDB = nucleoDB;
+        tables = new LinkedHashSet<>();
+        for (DataTable t : this.nucleoDB.getTables().values()) {
+            tables.add(t.getName());
+        }
+        connections = new LinkedHashSet<>();
+        for (ConnectionHandler c : this.nucleoDB.getConnections().values()) {
+            connections.add(c.getName());
+        }
     }
 
     public Status(Status original) {
         this.items = original.items;
         this.port = original.port;
-        this.tables = original.tables != null ? Sets.newCopyOnWriteArraySet(original.tables) : null;
-        this.connections = original.connections != null ? Sets.newCopyOnWriteArraySet(original.connections) : null;
+        this.nucleoDB = original.nucleoDB;
+        tables = new LinkedHashSet<>();
+        for (DataTable t : this.nucleoDB.getTables().values()) {
+            tables.add(t.getName());
+        }
+        connections = new LinkedHashSet<>();
+        for (ConnectionHandler c : this.nucleoDB.getConnections().values()) {
+            connections.add(c.getName());
+        }
         this.os = original.os;
         this.leaderId = original.leaderId;
         this.id = original.id;  // Assuming you want to copy the original UUID, otherwise generate a new one
     }
 
-    int items;
-    int port;
-    Set<String> tables = Sets.newHashSet();
-    Set<String> connections = Sets.newHashSet();
-    String os = System.getProperty("os.name");
-    static String host;
+    private transient NucleoDB nucleoDB;
+    private Set<String> tables;
+    private Set<String> connections;
+    private int items;
+    private int port;
+    private String os = System.getProperty("os.name");
+    private static String host;
 
     static {
         try {
@@ -49,7 +66,7 @@ public class Status {
 
 
     public int getItems() {
-        return items;
+        return nucleoDB.getConnections().size() + nucleoDB.getTables().size();
     }
 
     public void setItems(int items) {
@@ -80,16 +97,8 @@ public class Status {
         return tables;
     }
 
-    public void setTables(Set<String> tables) {
-        this.tables = tables;
-    }
-
     public Set<String> getConnections() {
         return connections;
-    }
-
-    public void setConnections(Set<String> connections) {
-        this.connections = connections;
     }
 
     public String getHost() {

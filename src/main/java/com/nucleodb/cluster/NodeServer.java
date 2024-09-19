@@ -27,6 +27,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
         basePackages = "com.nucleodb.cluster.db.repos"
 )
 @EnableAsync
+
 public class NodeServer {
         public static void main(String[] args) {
                 Serializer.getObjectMapper().getOm().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

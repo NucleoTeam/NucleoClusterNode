@@ -1,5 +1,6 @@
 package com.nucleodb.cluster.raft;
 
+import com.nucleodb.cluster.raft.common.AssignedResource;
 import com.nucleodb.cluster.raft.common.Status;
 import com.nucleodb.cluster.raft.leadership.LeaderRequest;
 import com.nucleodb.library.NucleoDB;
@@ -16,8 +17,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.event.ConsumerStartedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import java.util.Timer;
-import java.util.TimerTask;
+import org.springframework.util.Assert;
+
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,26 +32,21 @@ public class Node {
 
     private static final Logger logger = LoggerFactory.getLogger(Node.class);
 
-    @Value("${server.port}")
-    int port;
-
-    Status status;
-    Timer leaderExpirationTimer = new Timer();
-    ScheduledExecutorService leaderSchedule = Executors.newScheduledThreadPool(1);
+    private static Status status;
+    private Timer leaderExpirationTimer = new Timer();
+    private ScheduledExecutorService leaderSchedule = Executors.newScheduledThreadPool(1);
 
     private KafkaTemplate<Object, Object> template;
-    private NucleoDB nucleoDB;
+    private static NucleoDB nucleoDB;
 
+    private Map<String, AssignedResource> assignedTables= new TreeMap<>();
+    private Map<String, AssignedResource> assignedConnections = new TreeMap<>();
 
-
-
-    public Node(NucleoDB nucleoDB, KafkaTemplate<Object, Object> template) {
+    public Node(NucleoDB nucleoDB, KafkaTemplate<Object, Object> template, @Value("${server.port}") int port) {
+        Assert.notNull(nucleoDB, "NucleoDB must not be null");
         this.nucleoDB = nucleoDB;
         this.template = template;
-
-        status = new Status(port);
-        this.nucleoDB.addTableEvent(table->status.getTables().add(table.getConfig().getTable()));
-        this.nucleoDB.addConnectionEvent(connection->status.getConnections().add(connection.getConfig().getLabel()));
+        status = new Status(nucleoDB, port);
     }
 
     @KafkaHandler
@@ -132,5 +129,13 @@ public class Node {
         try{
             leaderSchedule.close();
         }catch (Exception e){}
+    }
+
+    public Map<String, AssignedResource> getAssignedTables() {
+        return assignedTables;
+    }
+
+    public Map<String, AssignedResource> getAssignedConnections() {
+        return assignedConnections;
     }
 }
